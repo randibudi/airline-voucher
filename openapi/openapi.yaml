@@ -4,7 +4,8 @@ info:
   version: 1.0.0
   description: API for checking and generating airline crew seat vouchers.
 servers:
-  - url: /
+  - url: http://localhost:8080
+    description: Local Docker Compose application
 paths:
   /api/health:
     get:
@@ -142,7 +143,6 @@ components:
           example: ok
     CheckVoucherRequest:
       type: object
-      additionalProperties: false
       required:
         - flightNumber
         - flightDate
@@ -157,7 +157,6 @@ components:
           example: "2026-08-05"
     GenerateVoucherRequest:
       type: object
-      additionalProperties: false
       required:
         - crewName
         - crewId
