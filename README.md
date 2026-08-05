@@ -2,47 +2,35 @@
 
 An airline voucher seat assignment application built with React, TypeScript, Vite, Mantine, Go, Fiber, and SQLite.
 
-## Status
-
-The backend core supports voucher lookup, idempotent voucher generation, aircraft-specific seat assignment, and SQLite persistence. The frontend remains a foundation shell.
-
 ## Requirements
 
 - Node.js 22
 - Go 1.26
 
-## Frontend Development
+## Run Locally
 
-Install dependencies and start the development server from the repository root:
-
-```sh
-npm --prefix frontend install
-npm --prefix frontend run dev
-```
-
-## Backend Development
-
-From the `backend` directory, start the API server:
+Start the backend from the repository root:
 
 ```sh
+cd backend
 go run ./cmd/api
 ```
 
-The server listens on `http://localhost:8080`. SQLite uses `vouchers.db` by default. Set `DATABASE_PATH` to use another location:
+The backend runs at `http://localhost:8080`. SQLite uses `vouchers.db` by default and initializes its schema automatically. Set `DATABASE_PATH` to use another database location.
+
+In another terminal, start the frontend from the repository root:
 
 ```sh
-DATABASE_PATH=/path/to/vouchers.db go run ./cmd/api
+npm --prefix frontend run dev
 ```
 
-The schema is initialized automatically at startup.
+The frontend uses the Vite default URL, normally `http://localhost:5173`. During development, Vite proxies relative `/api` requests to `http://localhost:8080`.
 
-### API Endpoints
+## Voucher Workflow
 
-- `GET /api/health` returns backend health as `{ "status": "ok" }`.
-- `POST /api/check` accepts `flightNumber` and `flightDate` (`YYYY-MM-DD`), then returns `{ "exists": boolean, "voucher": object | null }`.
-- `POST /api/generate` accepts `crewName`, `crewId`, `flightNumber`, `flightDate` (`YYYY-MM-DD`), and `aircraft`, then returns the existing or newly generated voucher.
+The frontend normalizes the flight number and sends the flight date as `YYYY-MM-DD`. It first calls `POST /api/check` with `flightNumber` and `flightDate`. If a voucher exists, it displays that voucher without generating another one. Otherwise, it calls `POST /api/generate` with `crewName`, `crewId`, `flightNumber`, `flightDate`, and `aircraft`.
 
-Supported aircraft names are `ATR`, `Airbus 320`, and `Boeing 737 Max`. Voucher responses contain `crewName`, `crewId`, normalized `flightNumber`, `flightDate`, `aircraft`, and exactly three `seats`.
+Supported aircraft names are `ATR`, `Airbus 320`, and `Boeing 737 Max`. Voucher responses contain `crewName`, `crewId`, normalized `flightNumber`, `flightDate`, `aircraft`, and exactly three `seats`. Dates are displayed in the frontend as `DD-MM-YYYY`.
 
 ## Quality Checks
 
