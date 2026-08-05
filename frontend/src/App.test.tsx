@@ -37,7 +37,7 @@ async function completeForm() {
   await user.click(screen.getByRole('combobox', { name: 'Aircraft' }))
   await user.click(screen.getByRole('option', { name: 'ATR' }))
   await user.click(
-    screen.getByRole('button', { name: 'Check and Generate Voucher' }),
+    screen.getByRole('button', { name: 'Check or Generate Voucher' }),
   )
 }
 
@@ -73,10 +73,16 @@ describe('App', () => {
 
     await completeForm()
 
+    expect(await screen.findByText('Existing voucher')).toBeInTheDocument()
     expect(
-      await screen.findByText('A previously issued voucher was found.'),
+      screen.getByText(
+        'A voucher was already created for this flight and date.',
+      ),
     ).toBeInTheDocument()
     expect(screen.getByText('05-08-2026')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Assigned Seats' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('1A')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock).toHaveBeenCalledWith(
@@ -99,8 +105,11 @@ describe('App', () => {
 
     await completeForm()
 
+    expect(await screen.findByText('New voucher generated')).toBeInTheDocument()
     expect(
-      await screen.findByText('A new voucher was created successfully.'),
+      screen.getByText(
+        'Three seats have been assigned and saved successfully.',
+      ),
     ).toBeInTheDocument()
     expect(screen.getByText('8C')).toBeInTheDocument()
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))

@@ -3,8 +3,9 @@ import {
   Badge,
   Button,
   Container,
+  Divider,
   Grid,
-  Group,
+  Loader,
   Paper,
   Select,
   SimpleGrid,
@@ -24,6 +25,7 @@ import {
   type GenerateVoucherInput,
   type Voucher,
 } from './api/vouchers'
+import './index.css'
 
 dayjs.extend(customParseFormat)
 
@@ -50,24 +52,41 @@ type ResultState = {
 
 function VoucherResult({ voucher, existing }: ResultState) {
   return (
-    <Paper component="section" aria-live="polite" withBorder radius="md" p="lg">
+    <Paper
+      component="section"
+      aria-live="polite"
+      aria-atomic="true"
+      withBorder
+      radius="lg"
+      p={{ base: 'lg', sm: 'xl' }}
+      className="result-card"
+    >
       <Stack gap="lg">
-        <Alert color={existing ? 'blue' : 'green'} title="Voucher status">
-          {existing
-            ? 'A previously issued voucher was found.'
-            : 'A new voucher was created successfully.'}
-        </Alert>
-
         <div>
+          <Badge
+            color={existing ? 'blue' : 'teal'}
+            variant="light"
+            size="lg"
+            mb="sm"
+          >
+            {existing ? 'Existing voucher' : 'New voucher generated'}
+          </Badge>
           <Title order={2} size="h3">
             Voucher details
           </Title>
-          <Text c="dimmed" size="sm">
-            Seat assignment for {voucher.flightNumber}
+          <Text c="dimmed" mt={4} size="sm">
+            {existing
+              ? 'A voucher was already created for this flight and date.'
+              : 'Three seats have been assigned and saved successfully.'}
           </Text>
         </div>
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+        <Divider />
+
+        <SimpleGrid
+          cols={{ base: 1, xs: 2 }}
+          spacing={{ base: 'md', sm: 'lg' }}
+        >
           <VoucherField label="Crew Name" value={voucher.crewName} />
           <VoucherField label="Crew ID" value={voucher.crewId} />
           <VoucherField label="Flight Number" value={voucher.flightNumber} />
@@ -78,17 +97,27 @@ function VoucherResult({ voucher, existing }: ResultState) {
           <VoucherField label="Aircraft" value={voucher.aircraft} />
         </SimpleGrid>
 
+        <Divider />
+
         <div>
-          <Text fw={600} mb="xs">
+          <Title order={3} size="h4" mb="sm">
             Assigned Seats
-          </Text>
-          <Group gap="sm" aria-label="Assigned seats">
+          </Title>
+          <div className="seat-grid" role="list" aria-label="Assigned seats">
             {voucher.seats.map((seat) => (
-              <Badge key={seat} size="xl" variant="filled" radius="sm">
-                {seat}
-              </Badge>
+              <Paper
+                key={seat}
+                role="listitem"
+                aria-label={`Assigned seat ${seat}`}
+                withBorder
+                radius="md"
+                className="seat-card"
+              >
+                <Text className="seat-label">Seat</Text>
+                <Text className="seat-value">{seat}</Text>
+              </Paper>
             ))}
-          </Group>
+          </div>
         </div>
       </Stack>
     </Paper>
@@ -97,13 +126,62 @@ function VoucherResult({ voucher, existing }: ResultState) {
 
 function VoucherField({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <Text size="sm" c="dimmed">
-        {label}
+    <div className="voucher-field">
+      <Text className="field-label">{label}</Text>
+      <Text fw={650} className="field-value">
+        {value}
       </Text>
-      <Text fw={600}>{value}</Text>
     </div>
   )
+}
+
+function HowItWorks() {
+  const steps = [
+    'We first check for a voucher with the same flight number and date.',
+    'If none exists, three available seats are assigned automatically.',
+    'The voucher is saved for future checks of that flight and date.',
+  ]
+
+  return (
+    <Paper
+      component="aside"
+      withBorder
+      radius="lg"
+      p={{ base: 'lg', sm: 'xl' }}
+      className="info-card"
+    >
+      <Badge variant="light" color="blue" mb="sm">
+        Quick guide
+      </Badge>
+      <Title order={2} size="h3">
+        How it works
+      </Title>
+      <Text c="dimmed" size="sm" mt={6} mb="lg">
+        One request is all it takes to find or create your voucher.
+      </Text>
+      <Stack component="ol" gap="md" className="steps-list">
+        {steps.map((step, index) => (
+          <li key={step} className="step-item">
+            <span className="step-number" aria-hidden="true">
+              {index + 1}
+            </span>
+            <Text size="sm">{step}</Text>
+          </li>
+        ))}
+      </Stack>
+    </Paper>
+  )
+}
+
+function getErrorMessage(caught: unknown) {
+  if (
+    caught instanceof Error &&
+    caught.message === 'Unable to reach the voucher service. Please try again.'
+  ) {
+    return caught.message
+  }
+
+  return 'The voucher service could not complete the request. Please check your details and try again.'
 }
 
 function App() {
@@ -149,7 +227,7 @@ function App() {
 
       if (checked.exists) {
         if (!checked.voucher) {
-          throw new Error('Voucher service returned an invalid check response.')
+          throw new Error('Voucher service returned an invalid response.')
         }
         setResult({ voucher: checked.voucher, existing: true })
         return
@@ -158,103 +236,148 @@ function App() {
       const voucher = await generateVoucher(request)
       setResult({ voucher, existing: false })
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : 'An unexpected error occurred. Please try again.',
-      )
+      setError(getErrorMessage(caught))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Container component="main" size="md" py={{ base: 'lg', sm: 'xl' }}>
-      <Stack gap="xl">
-        <div>
-          <Title order={1}>Airline Voucher Seat Assignment</Title>
-          <Text c="dimmed" mt="xs">
-            Check for an existing voucher or generate a new seat assignment.
+    <div className="app-shell">
+      <Container component="main" size="lg" py={{ base: 32, sm: 48, md: 64 }}>
+        <header className="hero">
+          <Text className="eyebrow">CREW VOUCHER</Text>
+          <Title order={1} className="hero-title">
+            Airline Voucher Seat Assignment
+          </Title>
+          <Text className="hero-description">
+            Check an existing voucher or generate three available seats for your
+            flight.
           </Text>
-        </div>
+        </header>
 
-        <Paper withBorder radius="md" p={{ base: 'md', sm: 'xl' }}>
-          <form onSubmit={form.onSubmit(submit)} noValidate>
-            <Stack gap="md">
-              <Grid>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput
-                    label="Crew Name"
-                    placeholder="Jane Doe"
-                    required
-                    autoComplete="name"
-                    key={form.key('crewName')}
-                    {...form.getInputProps('crewName')}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput
-                    label="Crew ID"
-                    placeholder="CRW001"
-                    required
-                    key={form.key('crewId')}
-                    {...form.getInputProps('crewId')}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <TextInput
-                    label="Flight Number"
-                    placeholder="GA123"
-                    required
-                    autoCapitalize="characters"
-                    key={form.key('flightNumber')}
-                    {...form.getInputProps('flightNumber')}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <DateInput
-                    label="Flight Date"
-                    placeholder="DD-MM-YYYY"
-                    valueFormat="DD-MM-YYYY"
-                    dateParser={parseFlightDate}
-                    required
-                    clearable
-                    key={form.key('flightDate')}
-                    {...form.getInputProps('flightDate')}
-                  />
-                </Grid.Col>
-                <Grid.Col span={12}>
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 7 }}>
+            <Paper
+              component="section"
+              withBorder
+              radius="lg"
+              p={{ base: 'lg', sm: 32 }}
+              className="form-card"
+            >
+              <Title order={2} size="h3">
+                Flight and Crew Details
+              </Title>
+              <Text c="dimmed" size="sm" mt={6} mb="xl">
+                Enter the crew and flight information below. All fields are
+                required.
+              </Text>
+
+              <form onSubmit={form.onSubmit(submit)} noValidate>
+                <Stack gap="lg">
+                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+                    <TextInput
+                      label="Crew Name"
+                      placeholder="e.g. John Doe"
+                      description="Enter the name shown on the crew record."
+                      required
+                      size="md"
+                      autoComplete="name"
+                      key={form.key('crewName')}
+                      {...form.getInputProps('crewName')}
+                    />
+                    <TextInput
+                      label="Crew ID"
+                      placeholder="e.g. CRW001"
+                      description="Use your assigned crew identifier."
+                      required
+                      size="md"
+                      autoComplete="username"
+                      key={form.key('crewId')}
+                      {...form.getInputProps('crewId')}
+                    />
+                    <TextInput
+                      label="Flight Number"
+                      placeholder="e.g. GA123"
+                      description="Spaces are trimmed and letters are capitalized."
+                      required
+                      size="md"
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      key={form.key('flightNumber')}
+                      {...form.getInputProps('flightNumber')}
+                    />
+                    <DateInput
+                      label="Flight Date"
+                      placeholder="DD-MM-YYYY"
+                      description="Use day-month-year format."
+                      valueFormat="DD-MM-YYYY"
+                      dateParser={parseFlightDate}
+                      required
+                      clearable
+                      size="md"
+                      autoComplete="off"
+                      key={form.key('flightDate')}
+                      {...form.getInputProps('flightDate')}
+                    />
+                  </SimpleGrid>
+
                   <Select
                     label="Aircraft"
                     placeholder="Select an aircraft"
+                    description="Choose the aircraft scheduled for this flight."
                     data={aircraftOptions}
                     required
+                    size="md"
                     key={form.key('aircraft')}
                     {...form.getInputProps('aircraft')}
                   />
-                </Grid.Col>
-              </Grid>
 
-              {error && (
-                <Alert
-                  color="red"
-                  title="Unable to process voucher"
-                  role="alert"
-                >
-                  {error}
-                </Alert>
-              )}
+                  {error && (
+                    <Alert
+                      color="red"
+                      title="Unable to process request"
+                      role="alert"
+                      variant="light"
+                    >
+                      {error}
+                    </Alert>
+                  )}
 
-              <Button type="submit" loading={loading} disabled={loading}>
-                Check and Generate Voucher
-              </Button>
+                  <div className="request-status" aria-live="polite">
+                    {loading && (
+                      <div className="loading-message">
+                        <Loader size="sm" aria-hidden="true" />
+                        <Text size="sm" fw={600}>
+                          Checking voucher availability...
+                        </Text>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    loading={loading}
+                    disabled={loading}
+                    size="md"
+                    className="submit-button"
+                  >
+                    Check or Generate Voucher
+                  </Button>
+                </Stack>
+              </form>
+            </Paper>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 5 }}>
+            <Stack gap="lg">
+              <HowItWorks />
+              {result && <VoucherResult {...result} />}
             </Stack>
-          </form>
-        </Paper>
-
-        {result && <VoucherResult {...result} />}
-      </Stack>
-    </Container>
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </div>
   )
 }
 
