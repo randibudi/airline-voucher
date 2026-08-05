@@ -1,12 +1,10 @@
 # Airline Voucher Seat Assignment
 
-A foundation for an airline voucher seat assignment application, built with React, TypeScript, Vite, Mantine, Go, and Fiber.
+An airline voucher seat assignment application built with React, TypeScript, Vite, Mantine, Go, Fiber, and SQLite.
 
 ## Status
 
-Phase 0 — Checkpoint B: Backend Foundation.
-
-The current application provides a minimal frontend shell and a backend health endpoint. Voucher forms, voucher APIs, persistence, and seat assignment business logic are not included in this checkpoint.
+The backend core supports voucher lookup, idempotent voucher generation, aircraft-specific seat assignment, and SQLite persistence. The frontend remains a foundation shell.
 
 ## Requirements
 
@@ -30,11 +28,21 @@ From the `backend` directory, start the API server:
 go run ./cmd/api
 ```
 
-The server listens on `http://localhost:8080` by default and provides:
+The server listens on `http://localhost:8080`. SQLite uses `vouchers.db` by default. Set `DATABASE_PATH` to use another location:
 
-```text
-GET /api/health
+```sh
+DATABASE_PATH=/path/to/vouchers.db go run ./cmd/api
 ```
+
+The schema is initialized automatically at startup.
+
+### API Endpoints
+
+- `GET /api/health` returns backend health as `{ "status": "ok" }`.
+- `POST /api/check` accepts `flightNumber` and `flightDate` (`YYYY-MM-DD`), then returns `{ "exists": boolean, "voucher": object | null }`.
+- `POST /api/generate` accepts `crewName`, `crewId`, `flightNumber`, `flightDate` (`YYYY-MM-DD`), and `aircraft`, then returns the existing or newly generated voucher.
+
+Supported aircraft names are `ATR`, `Airbus 320`, and `Boeing 737 Max`. Voucher responses contain `crewName`, `crewId`, normalized `flightNumber`, `flightDate`, `aircraft`, and exactly three `seats`.
 
 ## Quality Checks
 

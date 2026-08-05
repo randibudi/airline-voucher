@@ -11,7 +11,7 @@ import (
 )
 
 func TestHealth(t *testing.T) {
-	application := app.New()
+	application := app.New(nil)
 	request := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 
 	response, err := application.Test(request)
