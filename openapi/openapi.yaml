@@ -1,0 +1,261 @@
+openapi: 3.1.0
+info:
+  title: Airline Voucher API
+  version: 1.0.0
+  description: API for checking and generating airline crew seat vouchers.
+servers:
+  - url: /
+paths:
+  /api/health:
+    get:
+      summary: Check API health
+      operationId: getHealth
+      responses:
+        "200":
+          description: The API is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+  /api/check:
+    post:
+      summary: Check for an existing voucher
+      operationId: checkVoucher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckVoucherRequest"
+            example:
+              flightNumber: GA123
+              flightDate: "2026-08-05"
+      responses:
+        "200":
+          description: The voucher lookup completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckVoucherResponse"
+              examples:
+                found:
+                  summary: Voucher found
+                  value:
+                    exists: true
+                    voucher:
+                      crewName: John Doe
+                      crewId: CRW001
+                      flightNumber: GA123
+                      flightDate: "2026-08-05"
+                      aircraft: ATR
+                      seats:
+                        - 1A
+                        - 2C
+                        - 3F
+                notFound:
+                  summary: Voucher not found
+                  value:
+                    exists: false
+                    voucher: null
+        "400":
+          description: The request body or voucher lookup input is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  message: "validation error: flightNumber is required"
+        "500":
+          description: An internal error prevented the voucher lookup.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  message: internal server error
+  /api/generate:
+    post:
+      summary: Generate or return a voucher
+      operationId: generateVoucher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateVoucherRequest"
+            example:
+              crewName: John Doe
+              crewId: CRW001
+              flightNumber: GA123
+              flightDate: "2026-08-05"
+              aircraft: ATR
+      responses:
+        "200":
+          description: The voucher was generated or an existing voucher was returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Voucher"
+              example:
+                crewName: John Doe
+                crewId: CRW001
+                flightNumber: GA123
+                flightDate: "2026-08-05"
+                aircraft: ATR
+                seats:
+                  - 1A
+                  - 2C
+                  - 3F
+        "400":
+          description: The request body or voucher generation input is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  message: "validation error: aircraft must be ATR, Airbus 320, or Boeing 737 Max"
+        "500":
+          description: An internal error prevented voucher generation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  message: internal server error
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          const: ok
+          example: ok
+    CheckVoucherRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - flightNumber
+        - flightDate
+      properties:
+        flightNumber:
+          type: string
+          minLength: 1
+          example: GA123
+        flightDate:
+          type: string
+          format: date
+          example: "2026-08-05"
+    GenerateVoucherRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - crewName
+        - crewId
+        - flightNumber
+        - flightDate
+        - aircraft
+      properties:
+        crewName:
+          type: string
+          minLength: 1
+          example: John Doe
+        crewId:
+          type: string
+          minLength: 1
+          example: CRW001
+        flightNumber:
+          type: string
+          minLength: 1
+          example: GA123
+        flightDate:
+          type: string
+          format: date
+          example: "2026-08-05"
+        aircraft:
+          type: string
+          enum:
+            - ATR
+            - Airbus 320
+            - Boeing 737 Max
+          example: ATR
+    Voucher:
+      type: object
+      additionalProperties: false
+      required:
+        - crewName
+        - crewId
+        - flightNumber
+        - flightDate
+        - aircraft
+        - seats
+      properties:
+        crewName:
+          type: string
+          example: John Doe
+        crewId:
+          type: string
+          example: CRW001
+        flightNumber:
+          type: string
+          example: GA123
+        flightDate:
+          type: string
+          format: date
+          example: "2026-08-05"
+        aircraft:
+          type: string
+          enum:
+            - ATR
+            - Airbus 320
+            - Boeing 737 Max
+          example: ATR
+        seats:
+          type: array
+          minItems: 3
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+          example:
+            - 1A
+            - 2C
+            - 3F
+    CheckVoucherResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - exists
+        - voucher
+      properties:
+        exists:
+          type: boolean
+          example: true
+        voucher:
+          oneOf:
+            - $ref: "#/components/schemas/Voucher"
+            - type: "null"
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - message
+          properties:
+            message:
+              type: string
+              example: "validation error: flightNumber is required"

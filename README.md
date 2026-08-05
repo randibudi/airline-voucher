@@ -21,7 +21,9 @@ Build and start the complete application from the repository root:
 docker compose up --build
 ```
 
-Open `http://localhost:8080`. Nginx serves the frontend and proxies `/api` requests to the internal backend service. SQLite data is stored persistently in the `voucher-data` named volume.
+Open the application at `http://localhost:8080`. Nginx serves the frontend and proxies `/api` requests to the internal backend service. SQLite data is stored persistently in the `voucher-data` named volume.
+
+Swagger UI is available at `http://localhost:8081` while Docker Compose is running. Its OpenAPI 3.1 specification is maintained in `openapi/openapi.yaml`.
 
 Stop the application while preserving its data:
 
