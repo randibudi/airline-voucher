@@ -4,8 +4,36 @@ An airline voucher seat assignment application built with React, TypeScript, Vit
 
 ## Requirements
 
+For manual development:
+
 - Node.js 22
 - Go 1.26
+
+For containerized local execution:
+
+- Docker with Docker Compose
+
+## Run with Docker
+
+Build and start the complete application from the repository root:
+
+```sh
+docker compose up --build
+```
+
+Open `http://localhost:8080`. Nginx serves the frontend and proxies `/api` requests to the internal backend service. SQLite data is stored persistently in the `voucher-data` named volume.
+
+Stop the application while preserving its data:
+
+```sh
+docker compose down
+```
+
+Remove the application containers and local SQLite data:
+
+```sh
+docker compose down -v
+```
 
 ## Run Locally
 
